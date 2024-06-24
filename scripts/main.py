@@ -1,8 +1,16 @@
+import random
+
 import pandas as pd
 import numpy as np
 import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
+
+random.seed(0)
+np.random.seed(0)
+torch.manual_seed(0)
+torch.cuda.manual_seed(0)
+torch.backends.cudnn.deterministic = True
 
 train_path = "../sign_dataset/sign_mnist_train/sign_mnist_train.csv"
 test_path = "../sign_dataset/sign_mnist_test/sign_mnist_test.csv"
@@ -18,14 +26,14 @@ def set_dataset(df):
     for i, row in df.iterrows():
         y_data.append(row['label'])
 
-        x_temp = []
+        x_temp = row.drop('label')
 
-        c = 0
-        for px in row:
-            if c != 0:
-                x_temp.append(px)
-            else:
-                c += 1
+        # c = 0
+        # for px in row:
+        #     if c != 0:
+        #         x_temp.append(px)
+        #     else:
+        #         c += 1
 
         nparr = np.array(x_temp)
         t = torch.tensor(nparr)
@@ -41,6 +49,7 @@ def set_dataset(df):
 
 
 x_train, y_train = set_dataset(traindf)
+print(x_train.shape)
 
 x_test, y_test = set_dataset(testdf)
 
@@ -53,6 +62,9 @@ class Net(nn.Module):
             in_channels=1, out_channels=6, kernel_size=5, padding=2)
         self.act1 = torch.nn.ReLU()
         self.pool1 = torch.nn.AvgPool2d(kernel_size=2, stride=2)
+
+        self.conv1_1 = nn.Conv2d(in_channels=6, out_channels=6, kernel_size=5, padding=2)
+        self.act1_1 = nn.ReLU()
 
         self.conv2 = torch.nn.Conv2d(
             in_channels=6, out_channels=16, kernel_size=5, padding=0)
@@ -70,6 +82,8 @@ class Net(nn.Module):
     def forward(self, x):
         x = self.conv1(x)
         x = self.act1(x)
+        # x = self.conv1_1(x)
+        # x = self.act1_1(x)
         x = self.pool1(x)
 
         x = self.conv2(x)
@@ -92,7 +106,7 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 net = net.to(device)
 
 loss = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(net.parameters(), lr=1.0e-3)
+optimizer = torch.optim.SGD(net.parameters(), momentum=0.7, lr=1.0e-3)
 
 batch_size = 100
 
@@ -107,7 +121,7 @@ y_train = y_train.to(device)
 x_test = x_test.to(device)
 y_test = y_test.to(device)
 
-for epoch in range(100):
+for epoch in range(50):
     order = np.random.permutation(len(x_train))
 
     for start_index in range(0, len(x_train), batch_size):
@@ -136,6 +150,7 @@ for epoch in range(100):
     train_loss_history.append(loss(train_preds, y_train).data.cpu())
 
 
+plt.axhline(y=0.992, color='r', linestyle='-', label='accuracy 0.992')
 plt.plot(test_accuracy_history, label='accuracy')
 
 plt.plot(test_loss_history, label='loss validation')
