@@ -63,8 +63,7 @@ class Net(nn.Module):
         self.act1 = torch.nn.ReLU()
         self.pool1 = torch.nn.AvgPool2d(kernel_size=2, stride=2)
 
-        self.conv1_1 = nn.Conv2d(in_channels=6, out_channels=6, kernel_size=5, padding=2)
-        self.act1_1 = nn.ReLU()
+        self.drop = nn.Dropout(0.5)
 
         self.conv2 = torch.nn.Conv2d(
             in_channels=6, out_channels=16, kernel_size=5, padding=0)
@@ -82,17 +81,20 @@ class Net(nn.Module):
     def forward(self, x):
         x = self.conv1(x)
         x = self.act1(x)
-        # x = self.conv1_1(x)
-        # x = self.act1_1(x)
         x = self.pool1(x)
+
+
 
         x = self.conv2(x)
         x = self.act2(x)
         x = self.pool2(x)
 
+        #print(x.size(0), x.size(1), x.size(2), x.size(3))
+
         x = x.view(x.size(0), x.size(1) * x.size(2) * x.size(3))
 
         x = self.fc1(x)
+        x = self.drop(x)
         x = self.act3(x)
         x = self.fc2(x)
         x = self.act4(x)
@@ -106,7 +108,7 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 net = net.to(device)
 
 loss = nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD(net.parameters(), momentum=0.7, lr=1.0e-3)
+optimizer = torch.optim.RMSprop(net.parameters(), lr=1.0e-3)
 
 batch_size = 100
 
