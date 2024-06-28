@@ -109,6 +109,7 @@ net = net.to(device)
 
 loss = nn.CrossEntropyLoss()
 optimizer = torch.optim.RMSprop(net.parameters(), lr=1.0e-3)
+sh = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=.1)
 
 batch_size = 100
 
@@ -140,6 +141,8 @@ for epoch in range(50):
         loss_value.backward()
 
         optimizer.step()
+
+    sh.step()
 
     test_preds = net.forward(x_test)
     test_loss_history.append(loss(test_preds, y_test).data.cpu())
