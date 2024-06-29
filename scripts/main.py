@@ -26,14 +26,7 @@ def set_dataset(df):
     for i, row in df.iterrows():
         y_data.append(row['label'])
 
-        x_temp = row.drop('label')
-
-        # c = 0
-        # for px in row:
-        #     if c != 0:
-        #         x_temp.append(px)
-        #     else:
-        #         c += 1
+        x_temp = row.drop('label')#/255
 
         nparr = np.array(x_temp)
         t = torch.tensor(nparr)
@@ -124,6 +117,8 @@ y_train = y_train.to(device)
 x_test = x_test.to(device)
 y_test = y_test.to(device)
 
+accuracy_max = 0
+
 for epoch in range(50):
     order = np.random.permutation(len(x_train))
 
@@ -149,12 +144,16 @@ for epoch in range(50):
 
     accuracy = (test_preds.argmax(dim=1) == y_test).float().mean().data.cpu()
     test_accuracy_history.append(accuracy)
+    if accuracy > accuracy_max:
+        torch.save(net, "GestRecogNet.pt")
+        accuracy_max = accuracy
     print(accuracy)
 
     train_preds = net.forward(x_train)
     train_loss_history.append(loss(train_preds, y_train).data.cpu())
 
 
+print("max accuracy: {0:.2f}".format(accuracy_max))
 plt.axhline(y=0.992, color='r', linestyle='-', label='accuracy 0.992')
 plt.plot(test_accuracy_history, label='accuracy')
 
